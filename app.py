@@ -23,10 +23,18 @@ dispatcher.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, echo))
 # ===== WEBHOOK =====
 @app.route("/webhook", methods=["POST"])
 def webhook():
-    if request.headers.get("X-Bot-Api-Secret-Token") != SECRET_TOKEN:
-        return "Unauthorized", 403
+    data = request.get_json(force=True)
+    print("=== WEBHOOK DATA ===")
+    print(data)
 
-    update = Update.de_json(request.json["result"], bot)
+    # Trường hợp Zalo gửi payload trực tiếp
+    payload = data.get("result") if isinstance(data, dict) else None
+
+    # Nếu không có result thì bỏ qua
+    if not payload:
+        return "ok"
+
+    update = Update.de_json(payload, bot)
     dispatcher.process_update(update)
     return "ok"
 
