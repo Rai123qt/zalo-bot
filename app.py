@@ -27,16 +27,18 @@ def webhook():
     print("=== WEBHOOK DATA ===")
     print(data)
 
-    # Trường hợp Zalo gửi payload trực tiếp
     payload = data.get("result") if isinstance(data, dict) else None
-
-    # Nếu không có result thì bỏ qua
     if not payload:
+        return "ok"
+
+    # 🔴 CHỈ XỬ LÝ TIN NHẮN VĂN BẢN
+    if payload.get("event_name") != "message.text.received":
         return "ok"
 
     update = Update.de_json(payload, bot)
     dispatcher.process_update(update)
     return "ok"
+
 
 # ===== RUN SERVER =====
 if __name__ == "__main__":
