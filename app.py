@@ -1,38 +1,30 @@
 from flask import Flask, request
 from zalo_bot import Bot, Update
-from zalo_bot.ext import Dispatcher, MessageHandler, filters
-
-BOT_TOKEN = "3222229135581534944:CTggeFHwGxfZaLeIBppjLsapWDhrNHaoSiLhhvfeuFmOdgrhdIYmabRTKofimvOU"
-SECRET_TOKEN = "new_secret_123"
+from zalo_bot.ext import Dispatcher, CommandHandler, MessageHandler, filters
 
 app = Flask(__name__)
-bot = Bot(token=BOT_TOKEN)
+TOKEN = '3222229135581534944:CTggeFHwGxfZaLeIBppjLsapWDhrNHaoSiLhhvfeuFmOdgrhdIYmabRTKofimvOU'
+bot = Bot(token=TOKEN)
 
-def echo(update, context):
-    update.message.reply_text(f"Bạn vừa nói: {update.message.text}")
+async def start(update: Update, context):
+    await update.message.reply_text(f"Xin chào {update.effective_user.display_name}!")
 
-dispatcher = Dispatcher(bot, None, workers=0)
-dispatcher.add_handler(MessageHandler(filters.TEXT, echo))
+async def echo(update: Update, context):
+    await update.message.reply_text(f"Bạn vừa nói: {update.message.text}")
 
-@app.route("/webhook", methods=["POST"])
+with app.app_context():
+    webhook_url = 'your_webhook_url'
+    bot.set_webhook(url=webhook_url, secret_token='your_secret_token_here')
+
+    dispatcher = Dispatcher(bot, None, workers=0)
+    dispatcher.add_handler(CommandHandler('start', start))
+    dispatcher.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, echo))
+
+@app.route('/webhook', methods=['POST'])
 def webhook():
-    data = request.get_json(force=True)
-
-    # In payload để debug
-    print("=== WEBHOOK PAYLOAD ===")
-    print(data)
-
-    payload = data.get("result")
-    if not payload:
-        return "ok"
-
-    # 🔴 CHỈ TRẢ LỜI KHI LÀ TIN NHẮN CHỮ
-    if payload.get("event_name") != "message.text.received":
-        return "ok"
-
-    update = Update.de_json(payload, bot)
+    update = Update.de_json(request.get_json(force=True)['result'], bot)
     dispatcher.process_update(update)
-    return "ok"
+    return 'ok'
 
-if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=10000)
+if __name__ == '__main__':
+    app.run(port=8443)
